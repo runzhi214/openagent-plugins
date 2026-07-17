@@ -1,0 +1,15 @@
+[workspace]
+members = [
+    "extended-settings",
+    "stats-cmd",
+    "telemetry",
+    "hdspace-models",
+]
+resolver = "2"
+
+[workspace.metadata]
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
