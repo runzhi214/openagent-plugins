@@ -7,4 +7,4 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-openagent-cli-sdk = { path = "../../../openagent-go/cmd/cli/sdk/rust" }
+openagent-cli-sdk = { path = "../../../openagent-go/plugin/sdk/rust" }

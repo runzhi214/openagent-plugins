@@ -1,5 +1,5 @@
-SDK_DIR := ../../openagent-go/cmd/cli/sdk/rust
-PLUGINS := extended-settings stats-cmd telemetry hdspace-models
+SDK_DIR := ../../openagent-go/plugin/sdk/rust
+PLUGINS := hdspace-models stats-cmd telemetry
 OUT_DIR := build/plugins
 TARGET  := wasm32-unknown-unknown
 CARGO   := cargo

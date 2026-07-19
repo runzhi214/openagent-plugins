@@ -56,7 +56,7 @@ fn get_models(ak: &str, sk: &str, security_token: Option<&str>) -> Option<AgentC
     }
     let ts = timestamp.unwrap();
 
-    let domain = host::get_env("HW_MODELS_DOMAIN").unwrap_or(DEFAULT_DOMAIN);
+    let domain = DEFAULT_DOMAIN;
     let url = alloc::format!("https://{}{}", domain, API_PATH);
 
     let auth = sign_request(ak, sk, domain, API_PATH_SIGN, ts);

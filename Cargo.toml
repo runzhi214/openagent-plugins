@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "extended-settings",
     "stats-cmd",
     "telemetry",
     "hdspace-models",
