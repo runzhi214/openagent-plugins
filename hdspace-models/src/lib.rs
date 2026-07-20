@@ -49,18 +49,13 @@ fn cli_init(settings: &str) -> String {
 }
 
 fn get_models(ak: &str, sk: &str, security_token: Option<&str>) -> Option<AgentConfig> {
-    let timestamp = host::get_time_utc();
-    if timestamp.is_none() {
-        host::log_warn("hdspace-models: get_time_utc returned empty, cannot sign request");
-        return None;
-    }
-    let ts = timestamp.unwrap();
+    let ts = utc_nanos_to_timestamp(host::utc_now());
 
     let domain = DEFAULT_DOMAIN;
     let url = alloc::format!("https://{}{}", domain, API_PATH);
 
-    let auth = sign_request(ak, sk, domain, API_PATH_SIGN, ts);
-    let headers = build_headers(&auth, domain, ts, security_token);
+    let auth = sign_request(ak, sk, domain, API_PATH_SIGN, &ts);
+    let headers = build_headers(&auth, domain, &ts, security_token);
 
     host::log_info("hdspace-models: calling API");
     let url_msg = alloc::format!("hdspace-models: url={}", url);
@@ -145,6 +140,53 @@ fn hex(data: &[u8]) -> String {
         s.push(HEX[(b & 0x0f) as usize] as char);
     }
     s
+}
+
+fn utc_nanos_to_timestamp(nanos: u64) -> String {
+    let secs = (nanos / 1_000_000_000) as u64;
+    let days = (secs / 86400) as i32;
+    let time_secs = (secs % 86400) as i32;
+    let h = time_secs / 3600;
+    let m = (time_secs % 3600) / 60;
+    let s = time_secs % 60;
+
+    let (y, mo, d) = epoch_days_to_date(days);
+    let mut out = String::with_capacity(16);
+    push_pad4(&mut out, y);
+    push_pad2(&mut out, mo);
+    push_pad2(&mut out, d);
+    out.push('T');
+    push_pad2(&mut out, h);
+    push_pad2(&mut out, m);
+    push_pad2(&mut out, s);
+    out.push('Z');
+    out
+}
+
+fn push_pad4(s: &mut String, n: i32) {
+    s.push(HEX[(n / 1000) as usize & 0xf] as char);
+    s.push(HEX[(n / 100 % 10) as usize] as char);
+    s.push(HEX[(n / 10 % 10) as usize] as char);
+    s.push(HEX[(n % 10) as usize] as char);
+}
+
+fn push_pad2(s: &mut String, n: i32) {
+    s.push(HEX[(n / 10) as usize] as char);
+    s.push(HEX[(n % 10) as usize] as char);
+}
+
+fn epoch_days_to_date(days: i32) -> (i32, i32, i32) {
+    let z = days + 719468;
+    let era = (if z >= 0 { z } else { z - 146096 }) / 146097;
+    let doe = (z - era * 146097) as u32;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let y = yoe as i32 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+    (y, m as i32, d as i32)
 }
 
 #[derive(Deserialize)]
