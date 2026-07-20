@@ -1,15 +1,11 @@
-SDK_DIR := ../../openagent-go/plugin/sdk/rust
 PLUGINS := hdspace-models stats-cmd telemetry
 OUT_DIR := build/plugins
 TARGET  := wasm32-unknown-unknown
 CARGO   := cargo
 
-.PHONY: all clean build-sdk $(PLUGINS)
+.PHONY: all clean $(PLUGINS)
 
-all: build-sdk $(PLUGINS)
-
-build-sdk:
-	cd $(SDK_DIR) && $(CARGO) build --release --target $(TARGET)
+all: $(PLUGINS)
 
 $(PLUGINS):
 	@mkdir -p $(OUT_DIR)

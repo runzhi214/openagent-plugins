@@ -98,6 +98,7 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 [[package]]
 name = "openagent-cli-sdk"
 version = "0.1.0"
+source = "git+https://github.com/yusheng-g/openagent-go.git#64113c2bd6ae77d331eaa499c11e6594e491eecd"
 
 [[package]]
 name = "proc-macro2"
@@ -172,13 +173,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "stats-cmd"
-version = "0.1.0"
-dependencies = [
- "openagent-cli-sdk",
-]
-
-[[package]]
 name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -193,13 +187,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
-]
-
-[[package]]
-name = "telemetry"
-version = "0.1.0"
-dependencies = [
- "openagent-cli-sdk",
 ]
 
 [[package]]

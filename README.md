@@ -7,18 +7,37 @@ WASM 插件集合，为 [openagent-cli](https://github.com/runzhi214/openagent-g
 | 插件 | 类型 | 说明 |
 |------|------|------|
 | `hdspace-models` | `cli:settings` | 从 host keyring 读取华为云 AKSK，调用 TokenHub API 获取模型配置，注入 settings |
-| `extended-settings` | `cli:settings` | 从 host keyring 读取 provider 凭证，注入 settings |
-| `stats-cmd` | `cli:commands` | 新增 `stats` 命令，查看插件状态 |
-| `telemetry` | `cli:observers` | 生命周期事件日志 |
 
 ## 构建
 
+### 前置条件
+
+- Rust toolchain（含 `rustup`）
+- `wasm32-unknown-unknown` target
+
 ```bash
 rustup target add wasm32-unknown-unknown
+```
+
+### 编译
+
+`openagent-cli-sdk` 通过 git 依赖自动拉取，无需本地 clone `openagent-go` 仓库。
+
+```bash
 make all
 ```
 
-产物位于 `build/plugins/` 目录。
+或手动编译单个插件：
+
+```bash
+cargo build --release --target wasm32-unknown-unknown -p hdspace-models
+```
+
+产物位于 `build/plugins/` 目录（`make all`）或 `target/wasm32-unknown-unknown/release/` 目录（手动编译）。
+
+### no_std 配置
+
+所有插件均为 `#![no_std]`，workspace `Cargo.toml` 中已配置 `panic = "abort"`（`wasm32-unknown-unknown` 不支持 unwinding）。
 
 ---
 
@@ -35,8 +54,6 @@ make all
 | `HW_ACCESS_KEY` | 是 | 华为云 Access Key |
 | `HW_SECRET_KEY` | 是 | 华为云 Secret Key |
 | `HW_SECURITY_TOKEN` | 否 | 临时 Security Token |
-
-支持通过环境变量 `HW_MODELS_DOMAIN` 覆盖 API 域名（默认 `devstation.myhuaweicloud.com`）。
 
 ### 注入内容
 
@@ -64,37 +81,6 @@ make all
     "HW_ACCESS_KEY": "<ak>",
     "HW_SECRET_KEY": "<sk>",
     "HW_SECURITY_TOKEN": "<token>"
-  }
-}
-```
-
----
-
-## extended-settings
-
-从 host keyring 读取自定义 provider 凭证，注入到 settings.json。
-
-### 前置条件
-
-| Key | 必填 | 说明 |
-|-----|------|------|
-| `my_provider_api_key` | 是 | provider 的 API Key |
-| `my_provider_base_url` | 是 | provider 的 Base URL |
-| `my_provider_models` | 否 | 模型 ID 列表，逗号分隔 |
-
-### 注入内容
-
-```json
-{
-  "provider": {
-    "my_provider": {
-      "api_key": "<keyring 中的 api_key>",
-      "base_url": "<keyring 中的 base_url>",
-      "models": ["model-a", "model-b"]
-    }
-  },
-  "env": {
-    "MY_PROVIDER_API_KEY": "<api_key>"
   }
 }
 ```

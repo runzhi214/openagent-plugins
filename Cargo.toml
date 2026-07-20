@@ -1,14 +1,16 @@
 [workspace]
 members = [
-    "stats-cmd",
-    "telemetry",
     "hdspace-models",
 ]
 resolver = "2"
 
 [workspace.metadata]
 
+[profile.dev]
+panic = "abort"
+
 [profile.release]
 opt-level = "z"
 lto = true
 strip = true
+panic = "abort"

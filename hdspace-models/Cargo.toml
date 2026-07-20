@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-openagent-cli-sdk = { path = "../../../openagent-go/plugin/sdk/rust" }
+openagent-cli-sdk = { git = "https://github.com/yusheng-g/openagent-go.git", subdirectory = "plugin/sdk/rust" }
 sha2 = { version = "0.10", default-features = false }
 hmac = { version = "0.12", default-features = false }
 serde = { version = "1", default-features = false, features = ["derive"] }
