@@ -5,8 +5,8 @@ use sdk::prelude::*;
 
 use alloc::vec::Vec;
 
-use sha2::{Digest, Sha256};
 use hmac::{Hmac, Mac};
+use sha2::{Digest, Sha256};
 type HmacSha256 = Hmac<Sha256>;
 
 use serde::Deserialize;
@@ -18,8 +18,14 @@ const API_PATH: &str = "/open-api-public/v1/tokenhub-configs";
 const API_PATH_SIGN: &str = "/open-api-public/v1/tokenhub-configs/";
 const HEX: &[u8; 16] = b"0123456789abcdef";
 
-#[no_mangle] pub extern "C" fn alloc(size: u32) -> u32 { sdk_alloc(size) }
-#[no_mangle] pub extern "C" fn metadata() -> u64 { sdk_meta(META) }
+#[no_mangle]
+pub extern "C" fn alloc(size: u32) -> u32 {
+    sdk_alloc(size)
+}
+#[no_mangle]
+pub extern "C" fn metadata() -> u64 {
+    sdk_meta(META)
+}
 
 #[no_mangle]
 pub extern "C" fn init(p: u32, l: u32) -> u64 {
@@ -36,7 +42,9 @@ fn cli_init(settings: &str) -> String {
     let security_token = host::keyring_get("openagent", "HW_SECURITY_TOKEN");
 
     if ak.is_none() || sk.is_none() {
-        host::log_info("hdspace-models: HW_ACCESS_KEY or HW_SECRET_KEY not set, returning settings as-is");
+        host::log_info(
+            "hdspace-models: HW_ACCESS_KEY or HW_SECRET_KEY not set, returning settings as-is",
+        );
         return String::from(settings);
     }
 
@@ -83,8 +91,15 @@ fn sign_request(ak: &str, sk: &str, host: &str, path: &str, timestamp: &str) -> 
 
     let signed_headers = "host;x-sdk-date";
     let canonical_headers = alloc::format!("host:{}\nx-sdk-date:{}\n", host, timestamp);
-    let canonical_request = alloc::format!("{}\n{}\n{}\n{}\n{}\n{}",
-        method, path, query, canonical_headers, signed_headers, payload);
+    let canonical_request = alloc::format!(
+        "{}\n{}\n{}\n{}\n{}\n{}",
+        method,
+        path,
+        query,
+        canonical_headers,
+        signed_headers,
+        payload
+    );
 
     let hashed = hex(&sha256(canonical_request.as_bytes()));
 
@@ -92,11 +107,20 @@ fn sign_request(ak: &str, sk: &str, host: &str, path: &str, timestamp: &str) -> 
 
     let signature = hex(&hmac_sha256_owned(sk.as_bytes(), string_to_sign.as_bytes()));
 
-    alloc::format!("SDK-HMAC-SHA256 Access={}, SignedHeaders={}, Signature={}",
-        ak, signed_headers, signature)
+    alloc::format!(
+        "SDK-HMAC-SHA256 Access={}, SignedHeaders={}, Signature={}",
+        ak,
+        signed_headers,
+        signature
+    )
 }
 
-fn build_headers(auth: &str, host_val: &str, timestamp: &str, security_token: Option<&str>) -> String {
+fn build_headers(
+    auth: &str,
+    host_val: &str,
+    timestamp: &str,
+    security_token: Option<&str>,
+) -> String {
     let mut h = String::from("{\"Authorization\":\"");
     h.push_str(auth);
     h.push_str("\",\"host\":\"");
@@ -143,7 +167,7 @@ fn hex(data: &[u8]) -> String {
 }
 
 fn utc_nanos_to_timestamp(nanos: u64) -> String {
-    let secs = (nanos / 1_000_000_000) as u64;
+    let secs = nanos / 1_000_000_000;
     let days = (secs / 86400) as i32;
     let time_secs = (secs % 86400) as i32;
     let h = time_secs / 3600;
@@ -241,14 +265,37 @@ fn extract_body_string(raw: &[u8]) -> Option<String> {
     while j < escaped.len() {
         if escaped[j] == b'\\' && j + 1 < escaped.len() {
             match escaped[j + 1] {
-                b'"' => { result.push('"'); j += 2; }
-                b'\\' => { result.push('\\'); j += 2; }
-                b'/' => { result.push('/'); j += 2; }
-                b'n' => { result.push('\n'); j += 2; }
-                b'r' => { result.push('\r'); j += 2; }
-                b't' => { result.push('\t'); j += 2; }
-                b'u' => { j += 6; }
-                _ => { result.push(escaped[j + 1] as char); j += 2; }
+                b'"' => {
+                    result.push('"');
+                    j += 2;
+                }
+                b'\\' => {
+                    result.push('\\');
+                    j += 2;
+                }
+                b'/' => {
+                    result.push('/');
+                    j += 2;
+                }
+                b'n' => {
+                    result.push('\n');
+                    j += 2;
+                }
+                b'r' => {
+                    result.push('\r');
+                    j += 2;
+                }
+                b't' => {
+                    result.push('\t');
+                    j += 2;
+                }
+                b'u' => {
+                    j += 6;
+                }
+                _ => {
+                    result.push(escaped[j + 1] as char);
+                    j += 2;
+                }
             }
         } else {
             result.push(escaped[j] as char);
@@ -267,7 +314,11 @@ fn merge_settings(
     security_token: Option<&str>,
 ) -> String {
     let trimmed = settings.trim_end();
-    let end = if trimmed.ends_with('}') { trimmed.len() - 1 } else { trimmed.len() };
+    let end = if trimmed.ends_with('}') {
+        trimmed.len() - 1
+    } else {
+        trimmed.len()
+    };
 
     let mut out = String::with_capacity(settings.len() + 2048);
     out.push_str(&settings[..end]);
@@ -286,7 +337,11 @@ fn merge_settings(
 
         let mut first = true;
         for m in &cfg.models {
-            if !first { out.push(',') } else { first = false }
+            if !first {
+                out.push(',')
+            } else {
+                first = false
+            }
             out.push('\"');
             out.push_str(&m.model_id);
             out.push('\"');
