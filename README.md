@@ -39,6 +39,22 @@ cargo build --release --target wasm32-unknown-unknown -p hdspace-models
 
 所有插件均为 `#![no_std]`，workspace `Cargo.toml` 中已配置 `panic = "abort"`（`wasm32-unknown-unknown` 不支持 unwinding）。
 
+### Docker 编译
+
+无需本地安装 Rust 工具链，使用 Docker 即可编译：
+
+```bash
+docker build --output type=local,dest=build/plugins .
+```
+
+或通过 Makefile：
+
+```bash
+make docker
+```
+
+产物直接输出到 `build/plugins/` 目录。
+
 ---
 
 ## hdspace-models
