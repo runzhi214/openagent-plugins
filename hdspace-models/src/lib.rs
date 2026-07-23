@@ -1,9 +1,8 @@
 #![no_std]
 extern crate alloc;
-extern crate openagent_cli_sdk as sdk;
+extern crate openagent_pdk as sdk;
 use sdk::prelude::*;
-
-use alloc::vec::Vec;
+use sdk::export::Plugin;
 
 use hmac::{Hmac, Mac};
 use sha2::{Digest, Sha256};
@@ -11,49 +10,64 @@ type HmacSha256 = Hmac<Sha256>;
 
 use serde::Deserialize;
 
-static META: &str = r#"{"type":"cli:settings","name":"hdspace-models","description":"Huawei Cloud Space models via AKSK"}"#;
-
 const DEFAULT_DOMAIN: &str = "devstation.myhuaweicloud.com";
 const API_PATH: &str = "/open-api-public/v1/tokenhub-configs";
 const API_PATH_SIGN: &str = "/open-api-public/v1/tokenhub-configs/";
 const HEX: &[u8; 16] = b"0123456789abcdef";
 
-#[no_mangle]
-pub extern "C" fn alloc(size: u32) -> u32 {
-    sdk_alloc(size)
-}
-#[no_mangle]
-pub extern "C" fn metadata() -> u64 {
-    sdk_meta(META)
+struct HdspacePlugin;
+
+impl Plugin for HdspacePlugin {
+    fn plugin_type() -> &'static str {
+        "cli:settings"
+    }
+    fn name() -> &'static str {
+        "hdspace-models"
+    }
+    fn description() -> &'static str {
+        "Huawei Cloud Space models via AKSK"
+    }
+    fn init(settings: &str) -> Result<String, String> {
+        host::log_info("hdspace-models: init called");
+        Ok(cli_init(settings))
+    }
 }
 
-#[no_mangle]
-pub extern "C" fn init(p: u32, l: u32) -> u64 {
-    host::log_info("hdspace-models: init called");
-    let s = unsafe { wasm_str(p, l) };
-    let result = cli_init(s);
-    host::log_info("hdspace-models: init done");
-    sdk_return(result.as_bytes())
-}
+openagent_pdk::export!(HdspacePlugin);
 
 fn cli_init(settings: &str) -> String {
-    let ak = host::keyring_get("openagent", "HW_ACCESS_KEY");
-    let sk = host::keyring_get("openagent", "HW_SECRET_KEY");
-    let security_token = host::keyring_get("openagent", "HW_SECURITY_TOKEN");
+    let ak = match host::keyring_get("openagent", "HW_ACCESS_KEY") {
+        Ok(v) if !v.is_empty() => v,
+        _ => {
+            host::log_info(
+                "hdspace-models: HW_ACCESS_KEY or HW_SECRET_KEY not set, returning settings as-is",
+            );
+            return String::from(settings);
+        }
+    };
+    let sk = match host::keyring_get("openagent", "HW_SECRET_KEY") {
+        Ok(v) if !v.is_empty() => v,
+        _ => {
+            host::log_info(
+                "hdspace-models: HW_ACCESS_KEY or HW_SECRET_KEY not set, returning settings as-is",
+            );
+            return String::from(settings);
+        }
+    };
+    let security_token = host::keyring_get("openagent", "HW_SECURITY_TOKEN")
+        .ok()
+        .filter(|v| !v.is_empty());
 
-    if ak.is_none() || sk.is_none() {
-        host::log_info(
-            "hdspace-models: HW_ACCESS_KEY or HW_SECRET_KEY not set, returning settings as-is",
-        );
-        return String::from(settings);
-    }
-
-    let ak = ak.unwrap();
-    let sk = sk.unwrap();
     host::log_info("hdspace-models: AKSK found, fetching model config");
 
-    let config = get_models(ak, sk, security_token);
-    merge_settings(settings, config.as_ref(), ak, sk, security_token)
+    let config = get_models(&ak, &sk, security_token.as_deref());
+    merge_settings(
+        settings,
+        config.as_ref(),
+        &ak,
+        &sk,
+        security_token.as_deref(),
+    )
 }
 
 fn get_models(ak: &str, sk: &str, security_token: Option<&str>) -> Option<AgentConfig> {
@@ -69,19 +83,29 @@ fn get_models(ak: &str, sk: &str, security_token: Option<&str>) -> Option<AgentC
     let url_msg = alloc::format!("hdspace-models: url={}", url);
     host::log_info(&url_msg);
 
-    let (status, body_raw) = host::http_request("GET", &url, &headers, &[]);
+    let (status, body) = match host::http_request("GET", &url, &headers, &[]) {
+        Ok(r) => r,
+        Err(e) => {
+            let warn = alloc::format!("hdspace-models: http error={}", e);
+            host::log_warn(&warn);
+            return None;
+        }
+    };
 
     if status != 200 {
         let warn = alloc::format!("hdspace-models: API status={}", status);
         host::log_warn(&warn);
-        if let Some(escaped) = extract_body_string(body_raw) {
-            let body_msg = alloc::format!("hdspace-models: response body={}", escaped);
-            host::log_warn(&body_msg);
-        }
+        let body_msg = alloc::format!("hdspace-models: response body={}", body);
+        host::log_warn(&body_msg);
         return None;
     }
 
-    parse_http_body(body_raw)
+    let resp: ApiResponse = serde_json::from_str(&body).ok()?;
+    if resp.error_code != "0000" {
+        host::log_warn("hdspace-models: API error code not 0000");
+        return None;
+    }
+    Some(resp.result)
 }
 
 fn sign_request(ak: &str, sk: &str, host: &str, path: &str, timestamp: &str) -> String {
@@ -234,76 +258,6 @@ struct ApiResponse {
     #[serde(default)]
     pub error_msg: String,
     pub result: AgentConfig,
-}
-
-fn parse_http_body(raw: &[u8]) -> Option<AgentConfig> {
-    let escaped_body = extract_body_string(raw)?;
-    let resp: ApiResponse = serde_json::from_str(&escaped_body).ok()?;
-    if resp.error_code != "0000" {
-        host::log_warn("hdspace-models: API error code not 0000");
-        return None;
-    }
-    Some(resp.result)
-}
-
-fn extract_body_string(raw: &[u8]) -> Option<String> {
-    let mut i = 0usize;
-    while i < raw.len() {
-        if raw[i] == b'\\' && i + 1 < raw.len() {
-            i += 2;
-        } else if raw[i] == b'"' {
-            break;
-        } else {
-            i += 1;
-        }
-    }
-
-    let escaped = &raw[..i];
-    let mut result = String::with_capacity(escaped.len());
-
-    let mut j = 0usize;
-    while j < escaped.len() {
-        if escaped[j] == b'\\' && j + 1 < escaped.len() {
-            match escaped[j + 1] {
-                b'"' => {
-                    result.push('"');
-                    j += 2;
-                }
-                b'\\' => {
-                    result.push('\\');
-                    j += 2;
-                }
-                b'/' => {
-                    result.push('/');
-                    j += 2;
-                }
-                b'n' => {
-                    result.push('\n');
-                    j += 2;
-                }
-                b'r' => {
-                    result.push('\r');
-                    j += 2;
-                }
-                b't' => {
-                    result.push('\t');
-                    j += 2;
-                }
-                b'u' => {
-                    j += 6;
-                }
-                _ => {
-                    result.push(escaped[j + 1] as char);
-                    j += 2;
-                }
-            }
-        } else {
-            result.push(escaped[j] as char);
-            j += 1;
-        }
-    }
-
-    Some(result)
 }
 
 fn merge_settings(
