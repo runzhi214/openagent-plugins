@@ -64,13 +64,31 @@ dependencies = [
 ]
 
 [[package]]
-name = "hdspace-models"
+name = "hdspace-common"
 version = "0.1.0"
 dependencies = [
  "hmac",
  "openagent-pdk",
  "serde",
  "sha2",
+]
+
+[[package]]
+name = "hdspace-models"
+version = "0.1.0"
+dependencies = [
+ "hdspace-common",
+ "openagent-pdk",
+ "serde",
+]
+
+[[package]]
+name = "hdspace-renew"
+version = "0.1.0"
+dependencies = [
+ "hdspace-common",
+ "openagent-pdk",
+ "serde",
 ]
 
 [[package]]
@@ -103,7 +121,7 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 [[package]]
 name = "openagent-pdk"
 version = "0.0.1"
-source = "git+https://github.com/yusheng-g/openagent-go#a699fde08fa64f7c038e5122387324af3a759366"
+source = "git+https://github.com/yusheng-g/openagent-go#e24c9542711df5c8dd0e4f66084096ec00a9b6b7"
 dependencies = [
  "base64",
  "serde",

@@ -1,12 +1,10 @@
 [package]
-name = "hdspace-models"
+name = "hdspace-common"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-crate-type = ["cdylib"]
-
 [dependencies]
 openagent-pdk = { git = "https://github.com/yusheng-g/openagent-go", subdirectory = "plugin/pdk/rust" }
-hdspace-common = { path = "../hdspace-common" }
+sha2 = { version = "0.10", default-features = false }
+hmac = { version = "0.12", default-features = false }
 serde = { version = "1", default-features = false, features = ["derive"] }

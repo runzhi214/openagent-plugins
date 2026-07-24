@@ -4,9 +4,10 @@ WASM 插件集合，为 [openagent-cli](https://github.com/runzhi214/openagent-g
 
 ## 插件列表
 
-| 插件 | 类型 | 说明 |
-|------|------|------|
-| `hdspace-models` | `cli:settings` | 从 host keyring 读取华为云 AKSK，调用 TokenHub API 获取模型配置，注入 settings |
+| 插件 | 类型 | 说明                                                                            |
+|------|------|---------------------------------------------------------------------------------|
+| `hdspace-models` | `cli:settings` | 从 host keyring 读取华为云 AKSK，调用 TokenHub API 获取模型配置，注入 settings  |
+| `hdspace-renew` | `agent:observers` | 当模型返回 401 时，重新从 keyring 读取 AKSK，调用 TokenHub API 刷新所有模型配置 |
 
 ## 构建
 
@@ -21,7 +22,7 @@ rustup target add wasm32-unknown-unknown
 
 ### 编译
 
-`openagent-cli-sdk` 通过 git 依赖自动拉取，无需本地 clone `openagent-go` 仓库。
+`openagent-pdk` 通过 git 依赖自动拉取，无需本地 clone `openagent-go` 仓库。
 
 ```bash
 make all
@@ -100,6 +101,30 @@ make docker
   }
 }
 ```
+
+---
+
+## hdspace-renew
+
+`agent:observers` 插件，监听 `model.call.leave` 阶段。当模型调用返回 401 错误时，自动从 host keyring 重新读取华为云 AKSK 凭据，调用 TokenHub API 获取最新的模型配置（api_key / base_url / 模型列表），然后逐个调用宿主的 `runtime_set_model_config` 方法更新每个模型的参数。
+
+### 工作流程
+
+1. 检测到 `model.call.leave` 阶段的错误包含 `401`
+2. 从 keyring 读取 `HW_ACCESS_KEY`、`HW_SECRET_KEY`（及可选的 `HW_SECURITY_TOKEN`）
+3. 使用 SDK-HMAC-SHA256 签名调用 TokenHub API 获取最新模型配置
+4. 遍历返回的模型列表，逐个调用 `runtime_set_model_config` 更新 `api_key` 和 `base_url`
+5. 返回 `continue`，更新后的配置在后续调用中生效
+
+### Keyring 凭据
+
+与 `hdspace-models` 共用同一组 keyring 凭据（Service 为 `openagent`）：
+
+| Key | 必填 | 说明 |
+|-----|------|------|
+| `HW_ACCESS_KEY` | 是 | 华为云 Access Key |
+| `HW_SECRET_KEY` | 是 | 华为云 Secret Key |
+| `HW_SECURITY_TOKEN` | 否 | 临时 Security Token（临时 AKSK 场景） |
 
 ---
 
