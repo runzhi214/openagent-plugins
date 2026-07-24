@@ -31,6 +31,18 @@ impl Plugin for HdspaceRenewPlugin {
         ));
 
         if event.phase == "leave" && !event.error.is_empty() && event.error.contains("401") {
+            let pid = host::runtime_provider().unwrap_or_default();
+            if pid != PROVIDER {
+                host::log_info(&alloc::format!(
+                    "hdspace-renew: provider={} != {}, skipping renew",
+                    pid,
+                    PROVIDER
+                ));
+                return StageOutput {
+                    action: String::from("continue"),
+                    reason: String::new(),
+                };
+            }
             host::log_warn("hdspace-renew: 401 detected, renewing model configs");
 
             let ak = match host::keyring_get("openagent", "HW_ACCESS_KEY") {
