@@ -7,6 +7,8 @@ use openagent_pdk::prelude::*;
 
 use hdspace_common::{get_models, PROVIDER};
 
+const TRIGGER_ERROR: &str = "401";
+
 struct HdspaceRenewPlugin;
 
 impl Plugin for HdspaceRenewPlugin {
@@ -17,7 +19,7 @@ impl Plugin for HdspaceRenewPlugin {
         "hdspace-renew"
     }
     fn description() -> &'static str {
-        "On 401, renew Huawei Cloud model configs from keyring AKSK via TokenHub"
+        "On HTTP auth error, renew Huawei Cloud model configs from keyring AKSK via TokenHub"
     }
 
     fn stage_filter() -> (&'static str, &'static str) {
@@ -25,12 +27,7 @@ impl Plugin for HdspaceRenewPlugin {
     }
 
     fn observe_stage(event: &StageInput) -> StageOutput {
-        host::log_info(&alloc::format!(
-            "hdspace-renew: model.call.leave error={}",
-            event.error
-        ));
-
-        if event.phase == "leave" && !event.error.is_empty() && event.error.contains("401") {
+        if event.phase == "leave" && !event.error.is_empty() && event.error.contains(TRIGGER_ERROR) {
             let pid = host::runtime_provider().unwrap_or_default();
             if pid != PROVIDER {
                 host::log_info(&alloc::format!(
@@ -43,7 +40,10 @@ impl Plugin for HdspaceRenewPlugin {
                     reason: String::new(),
                 };
             }
-            host::log_warn("hdspace-renew: 401 detected, renewing model configs");
+            host::log_warn(&alloc::format!(
+                "hdspace-renew: {} detected, renewing model configs",
+                TRIGGER_ERROR
+            ));
 
             let ak = match host::keyring_get("openagent", "HW_ACCESS_KEY") {
                 Ok(v) if !v.is_empty() => v,
