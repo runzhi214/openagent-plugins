@@ -27,7 +27,8 @@ impl Plugin for HdspaceRenewPlugin {
     }
 
     fn observe_stage(event: &StageInput) -> StageOutput {
-        if event.phase == "leave" && !event.error.is_empty() && event.error.contains(TRIGGER_ERROR) {
+        if event.phase == "leave" && !event.error.is_empty() && event.error.contains(TRIGGER_ERROR)
+        {
             let pid = host::runtime_provider().unwrap_or_default();
             if pid != PROVIDER {
                 host::log_info(&alloc::format!(
