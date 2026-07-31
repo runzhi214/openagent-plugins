@@ -99,9 +99,13 @@ fn merge_settings(
             } else {
                 first = false
             }
-            out.push('\"');
+            out.push_str("{\"model_id\":\"");
             out.push_str(&m.model_id);
-            out.push('\"');
+            out.push_str("\",\"context_window\":");
+            out.push_str(&alloc::format!("{}", m.context_window));
+            out.push_str(",\"max_tokens\":");
+            out.push_str(&alloc::format!("{}", m.max_tokens));
+            out.push('}');
         }
         out.push_str("]}},");
         host::log_info("hdspace-models: provider config injected");

@@ -23,6 +23,10 @@ pub struct ModelInfo {
     pub model_id: String,
     #[allow(dead_code)]
     pub model_name: String,
+    #[serde(default)]
+    pub context_window: u64,
+    #[serde(default)]
+    pub max_tokens: u64,
 }
 
 #[derive(Deserialize)]
