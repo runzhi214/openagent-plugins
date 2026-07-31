@@ -1,8 +1,0 @@
-[package]
-name = "openviking-common"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-openagent-pdk = { path = "../../../openagent-go/plugin/pdk/rust" }
-serde = { version = "1", default-features = false, features = ["derive"] }
