@@ -3,6 +3,8 @@ members = [
     "hdspace-common",
     "hdspace-models",
     "hdspace-renew",
+    "openviking-common",
+    "openviking-memory",
 ]
 resolver = "2"
 
