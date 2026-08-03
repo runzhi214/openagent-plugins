@@ -99,15 +99,25 @@ fn merge_settings(
             } else {
                 first = false
             }
-            out.push_str("{\"model_id\":\"");
+            out.push_str("{\"id\":\"");
             out.push_str(&m.model_id);
-            out.push_str("\",\"context_window\":");
+            out.push_str("\",\"max_input_tokens\":");
             out.push_str(&alloc::format!("{}", m.context_window));
-            out.push_str(",\"max_tokens\":");
+            out.push_str(",\"max_output_tokens\":");
             out.push_str(&alloc::format!("{}", m.max_tokens));
             out.push('}');
         }
         out.push_str("]}},");
+        if !settings.contains("\"model\"") {
+            out.push_str("\"model\":\"");
+            out.push_str(PROVIDER);
+            out.push('/');
+            if let Some(first) = cfg.models.first() {
+                out.push_str(&first.model_id);
+            }
+            out.push_str("\",");
+            host::log_info("hdspace-models: default model injected");
+        }
         host::log_info("hdspace-models: provider config injected");
     }
 

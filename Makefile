@@ -1,4 +1,4 @@
-PLUGINS := hdspace-models hdspace-renew openviking-memory
+PLUGINS := hdspace-models hdspace-renew
 OUT_DIR := build/plugins
 TARGET  := wasm32-unknown-unknown
 CARGO   := cargo

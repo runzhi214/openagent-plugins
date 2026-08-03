@@ -80,7 +80,7 @@ impl Plugin for HdspaceRenewPlugin {
                     ));
                     for m in &cfg.models {
                         let cfg_json = alloc::format!(
-                            r#"{{"provider":"{}","model_id":"{}","api_key":"{}","base_url":"{}","context_window":{},"max_tokens":{}}}"#,
+                            r#"{{"provider":"{}","model_id":"{}","api_key":"{}","base_url":"{}","max_input_tokens":{},"max_output_tokens":{}}}"#,
                             PROVIDER,
                             m.model_id,
                             cfg.api_key,

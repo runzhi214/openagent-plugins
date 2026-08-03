@@ -68,7 +68,7 @@ name = "hdspace-common"
 version = "0.1.0"
 dependencies = [
  "hmac",
- "openagent-pdk 0.0.1 (git+https://github.com/yusheng-g/openagent-go)",
+ "openagent-pdk",
  "serde",
  "sha2",
 ]
@@ -78,7 +78,7 @@ name = "hdspace-models"
 version = "0.1.0"
 dependencies = [
  "hdspace-common",
- "openagent-pdk 0.0.1 (git+https://github.com/yusheng-g/openagent-go)",
+ "openagent-pdk",
  "serde",
 ]
 
@@ -87,7 +87,7 @@ name = "hdspace-renew"
 version = "0.1.0"
 dependencies = [
  "hdspace-common",
- "openagent-pdk 0.0.1 (git+https://github.com/yusheng-g/openagent-go)",
+ "openagent-pdk",
  "serde",
 ]
 
@@ -121,37 +121,11 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 [[package]]
 name = "openagent-pdk"
 version = "0.0.1"
-dependencies = [
- "base64",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "openagent-pdk"
-version = "0.0.1"
 source = "git+https://github.com/yusheng-g/openagent-go#e24c9542711df5c8dd0e4f66084096ec00a9b6b7"
 dependencies = [
  "base64",
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "openviking-common"
-version = "0.1.0"
-dependencies = [
- "openagent-pdk 0.0.1",
- "serde",
-]
-
-[[package]]
-name = "openviking-memory"
-version = "0.1.0"
-dependencies = [
- "openagent-pdk 0.0.1",
- "openviking-common",
- "serde",
 ]
 
 [[package]]

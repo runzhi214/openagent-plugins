@@ -80,7 +80,27 @@ pub fn get_models(ak: &str, sk: &str, security_token: Option<&str>) -> Option<Ag
         openagent_pdk::host::log_warn("tokenhub: API error code not 0000");
         return None;
     }
-    Some(resp.result)
+    let mut result = resp.result;
+    override_limits(&mut result.models);
+    Some(result)
+}
+
+fn override_limits(models: &mut [ModelInfo]) {
+    for m in models.iter_mut() {
+        let (cw, mt) = match m.model_id.as_str() {
+            "glm-5.2" => (131072, 131072),
+            "glm-5.1" => (131072, 131072),
+            "glm-5" => (131072, 65536),
+            "openpangu-2.0-flash" => (512000, 131072),
+            "deepseek-r1-250528" => (98304, 32768),
+            "deepseek-v3.2" => (131072, 32768),
+            "DeepSeek-V3" => (131072, 32768),
+            "deepseek-v3.1-terminus" => (131072, 32768),
+            _ => continue,
+        };
+        m.context_window = cw;
+        m.max_tokens = mt;
+    }
 }
 
 fn sign_request(ak: &str, sk: &str, host: &str, path: &str, timestamp: &str) -> String {
