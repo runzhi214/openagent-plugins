@@ -1,8 +1,8 @@
 [workspace]
 members = [
     "hdspace-common",
-    "hdspace-models",
-    "hdspace-renew",
+    "hdspace-models-v2",
+    "hdspace-renew-v2",
 ]
 resolver = "2"
 

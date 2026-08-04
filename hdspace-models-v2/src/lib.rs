@@ -13,7 +13,7 @@ impl Plugin for HdspacePlugin {
         "cli:settings"
     }
     fn name() -> &'static str {
-        "hdspace-models"
+        "hdspace-models-v2"
     }
     fn description() -> &'static str {
         "Huawei Cloud Space models via AKSK"
@@ -119,6 +119,17 @@ fn merge_settings(
             host::log_info("hdspace-models: default model injected");
         }
         host::log_info("hdspace-models: provider config injected");
+
+        if !cfg.embedding_models.is_empty() {
+            out.push_str("\"embedding\":{\"provider\":\"openai\",\"base_url\":\"");
+            out.push_str(&cfg.base_url);
+            out.push_str("\",\"api_key\":\"");
+            out.push_str(&cfg.api_key);
+            out.push_str("\",\"model\":\"");
+            out.push_str(&cfg.embedding_models[0].model_id);
+            out.push_str("\"},");
+            host::log_info("hdspace-models: embedding config injected");
+        }
     }
 
     out.push_str("\"env\":{\"HW_ACCESS_KEY\":\"");

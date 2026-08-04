@@ -74,7 +74,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "hdspace-models"
+name = "hdspace-models-v2"
 version = "0.1.0"
 dependencies = [
  "hdspace-common",
@@ -83,7 +83,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "hdspace-renew"
+name = "hdspace-renew-v2"
 version = "0.1.0"
 dependencies = [
  "hdspace-common",

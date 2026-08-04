@@ -16,7 +16,7 @@ impl Plugin for HdspaceRenewPlugin {
         "agent:observers"
     }
     fn name() -> &'static str {
-        "hdspace-renew"
+        "hdspace-renew-v2"
     }
     fn description() -> &'static str {
         "On HTTP auth error, renew Huawei Cloud model configs from keyring AKSK via TokenHub"

@@ -13,8 +13,8 @@ use openagent_pdk::prelude::serde_json;
 use serde::Deserialize;
 
 pub const DEFAULT_DOMAIN: &str = "devstation.myhuaweicloud.com";
-pub const API_PATH: &str = "/open-api-public/v1/tokenhub-configs";
-pub const API_PATH_SIGN: &str = "/open-api-public/v1/tokenhub-configs/";
+pub const API_PATH: &str = "/open-api-public/v2/tokenhub-configs";
+pub const API_PATH_SIGN: &str = "/open-api-public/v2/tokenhub-configs/";
 pub const PROVIDER: &str = "huawei-free";
 const HEX: &[u8; 16] = b"0123456789abcdef";
 
@@ -27,13 +27,30 @@ pub struct ModelInfo {
     pub context_window: u64,
     #[serde(default)]
     pub max_tokens: u64,
+    #[serde(default)]
+    pub sort: u32,
 }
 
 #[derive(Deserialize)]
+struct ModelsByType {
+    #[serde(default)]
+    text: Vec<ModelInfo>,
+    #[serde(default)]
+    embedding: Vec<ModelInfo>,
+}
+
+#[derive(Deserialize)]
+struct AgentConfigRaw {
+    api_key: String,
+    base_url: String,
+    models: ModelsByType,
+}
+
 pub struct AgentConfig {
     pub api_key: String,
     pub base_url: String,
     pub models: Vec<ModelInfo>,
+    pub embedding_models: Vec<ModelInfo>,
 }
 
 #[derive(Deserialize)]
@@ -42,7 +59,7 @@ struct ApiResponse {
     #[allow(dead_code)]
     #[serde(default)]
     pub error_msg: String,
-    pub result: AgentConfig,
+    result: AgentConfigRaw,
 }
 
 pub fn get_models(ak: &str, sk: &str, security_token: Option<&str>) -> Option<AgentConfig> {
@@ -80,9 +97,23 @@ pub fn get_models(ak: &str, sk: &str, security_token: Option<&str>) -> Option<Ag
         openagent_pdk::host::log_warn("tokenhub: API error code not 0000");
         return None;
     }
-    let mut result = resp.result;
-    override_limits(&mut result.models);
-    Some(result)
+
+    let result = resp.result;
+    let mut text_models = result.models.text;
+    let mut embedding_models = result.models.embedding;
+
+    text_models.sort_by_key(|m| m.sort);
+    embedding_models.sort_by_key(|m| m.sort);
+
+    override_limits(&mut text_models);
+    override_limits(&mut embedding_models);
+
+    Some(AgentConfig {
+        api_key: result.api_key,
+        base_url: result.base_url,
+        models: text_models,
+        embedding_models,
+    })
 }
 
 fn override_limits(models: &mut [ModelInfo]) {

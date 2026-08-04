@@ -1,4 +1,4 @@
-PLUGINS := hdspace-models hdspace-renew
+PLUGINS := hdspace-models-v2 hdspace-renew-v2
 OUT_DIR := build/plugins
 TARGET  := wasm32-unknown-unknown
 CARGO   := cargo
