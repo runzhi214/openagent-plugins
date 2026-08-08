@@ -3,6 +3,7 @@ members = [
     "hdspace-common",
     "hdspace-models",
     "hdspace-renew",
+    "hdspace-envsync",
 ]
 resolver = "2"
 

@@ -1,0 +1,11 @@
+[package]
+name = "hdspace-envsync"
+version = "0.1.0"
+edition = "2021"
+description = "Scheduled plugin: syncs Huawei AK/SK from keyring into host env every 5 min"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+openagent-pdk = { git = "https://github.com/yusheng-g/openagent-go", subdirectory = "plugin/pdk/rust" }

@@ -8,6 +8,7 @@ WASM 插件集合，为 [openagent-cli](https://github.com/runzhi214/openagent-g
 |------|------|---------------------------------------------------------------------------------|
 | `hdspace-models` | `cli:settings` | 从 host keyring 读取华为云 AKSK，调用 TokenHub API 获取模型配置，注入 settings  |
 | `hdspace-renew` | `agent:observers` | 当模型返回 HTTP 认证错误时，重新从 keyring 读取 AKSK，调用 TokenHub API 刷新所有模型配置 |
+| `hdspace-envsync` | `agent:tools` (scheduled) | 每 5 分钟从 keyring 读取 HW_ACCESS_KEY/HW_SECRET_KEY/HW_SECURITY_TOKEN 同步到宿主进程环境变量 |
 
 ## 构建
 
@@ -125,6 +126,27 @@ make docker
 | `HW_ACCESS_KEY` | 是 | 华为云 Access Key |
 | `HW_SECRET_KEY` | 是 | 华为云 Secret Key |
 | `HW_SECURITY_TOKEN` | 否 | 临时 Security Token（临时 AKSK 场景） |
+
+---
+
+## hdspace-envsync
+
+定时作业插件，声明一个每 5 分钟执行的 cron job（`*/5 * * * *`）。到点时从 host keyring 读取华为云 AKSK 凭据，同步到宿主进程的环境变量中，使下游消费者（iac-server、terraform 子进程、SDK-HMAC-SHA256 签名等）无需重启即可拿到最新凭据。
+
+### 工作流程
+
+1. 宿主 scheduler 每 5 分钟触发插件的 `run_scheduled` 导出
+2. 从 keyring（service `openagent`）读取 `HW_ACCESS_KEY`、`HW_SECRET_KEY`
+3. 调用 `host::env_set` 写入宿主进程环境变量
+4. `HW_SECURITY_TOKEN` 为可选——存在则设，不存在则 `env_unset` 清除防残留
+
+### Keyring 凭据
+
+与 `hdspace-models` / `hdspace-renew` 共用同一组 keyring 凭据（Service 为 `openagent`）。
+
+### 部署
+
+`agent:*` 插件需放置在 `~/.openagent/profile/plugins/`（agent 插件系统加载目录），与 `cli:*` 插件的 `~/.openagent/plugins/` 不同。
 
 ---
 

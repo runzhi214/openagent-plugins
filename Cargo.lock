@@ -74,6 +74,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "hdspace-envsync"
+version = "0.1.0"
+dependencies = [
+ "openagent-pdk",
+]
+
+[[package]]
 name = "hdspace-models"
 version = "0.1.0"
 dependencies = [
@@ -121,7 +128,7 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 [[package]]
 name = "openagent-pdk"
 version = "0.0.1"
-source = "git+https://github.com/yusheng-g/openagent-go#e24c9542711df5c8dd0e4f66084096ec00a9b6b7"
+source = "git+https://github.com/yusheng-g/openagent-go#283098d2607582249095279fdea45860f17cbea6"
 dependencies = [
  "base64",
  "serde",
