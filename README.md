@@ -8,7 +8,7 @@ WASM 插件集合，为 [openagent-cli](https://github.com/runzhi214/openagent-g
 |------|------|---------------------------------------------------------------------------------|
 | `hdspace-models` | `cli:settings` | 从 host keyring 读取华为云 AKSK，调用 TokenHub API 获取模型配置，注入 settings  |
 | `hdspace-renew` | `agent:observers` | 当模型返回 HTTP 认证错误时，重新从 keyring 读取 AKSK，调用 TokenHub API 刷新所有模型配置 |
-| `hdspace-envsync` | `agent:tools` (scheduled) | 每 5 分钟从 keyring 读取 HW_ACCESS_KEY/HW_SECRET_KEY/HW_SECURITY_TOKEN 同步到宿主进程环境变量 |
+| `hdspace-envsync` | `agent:tools` (scheduled) | 每 1 分钟从 keyring 读取 HW_ACCESS_KEY/HW_SECRET_KEY/HW_SECURITY_TOKEN 同步到宿主进程环境变量 |
 
 ## 构建
 
@@ -131,11 +131,11 @@ make docker
 
 ## hdspace-envsync
 
-定时作业插件，声明一个每 5 分钟执行的 cron job（`*/5 * * * *`）。到点时从 host keyring 读取华为云 AKSK 凭据，同步到宿主进程的环境变量中，使下游消费者（iac-server、terraform 子进程、SDK-HMAC-SHA256 签名等）无需重启即可拿到最新凭据。
+定时作业插件，声明一个每 1 分钟执行的 cron job（`*/1 * * * *`）。到点时从 host keyring 读取华为云 AKSK 凭据，同步到宿主进程的环境变量中，使下游消费者（iac-server、terraform 子进程、SDK-HMAC-SHA256 签名等）无需重启即可拿到最新凭据。
 
 ### 工作流程
 
-1. 宿主 scheduler 每 5 分钟触发插件的 `run_scheduled` 导出
+1. 宿主 scheduler 每 1 分钟触发插件的 `run_scheduled` 导出
 2. 从 keyring（service `openagent`）读取 `HW_ACCESS_KEY`、`HW_SECRET_KEY`
 3. 调用 `host::env_set` 写入宿主进程环境变量
 4. `HW_SECURITY_TOKEN` 为可选——存在则设，不存在则 `env_unset` 清除防残留
