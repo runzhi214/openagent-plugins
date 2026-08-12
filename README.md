@@ -82,7 +82,7 @@ make docker
 ```json
 {
   "provider": {
-    "huawei-free": {
+    "hwdevspace": {
       "api_key": "<API 返回的 api_key>",
       "base_url": "<API 返回的 base_url>",
       "models": ["model-id-1", "model-id-2"]
