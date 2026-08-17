@@ -1,0 +1,13 @@
+[package]
+name = "skill-manager"
+version = "0.1.0"
+edition = "2021"
+description = "cli:http route plugin: list/detail/install/remove installable skills against INSTALLABLE_SKILLS.json"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+openagent-pdk = { git = "https://github.com/yusheng-g/openagent-go", subdirectory = "plugin/pdk/rust" }
+serde = { version = "1", default-features = false, features = ["derive"] }
+serde_json = { version = "1", default-features = false, features = ["alloc"] }

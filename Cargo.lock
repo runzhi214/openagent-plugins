@@ -228,6 +228,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "skill-manager"
+version = "0.1.0"
+dependencies = [
+ "openagent-pdk",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -4,12 +4,13 @@ WASM 插件集合，为 [openagent-cli](https://github.com/runzhi214/openagent-g
 
 ## 插件列表
 
-| 插件 | 类型 | 说明                                                                            |
-|------|------|---------------------------------------------------------------------------------|
-| `hdspace-models` | `cli:settings` | 从 host keyring 读取华为云 AKSK，调用 TokenHub API 获取模型配置，注入 settings  |
+| 插件 | 类型 | 说明 |
+|------|------|------|
+| `hdspace-models` | `cli:settings` | 从 host keyring 读取华为云 AKSK，调用 TokenHub API 获取模型配置，注入 settings |
 | `hdspace-renew` | `agent:observers` | 当模型返回 HTTP 认证错误时，重新从 keyring 读取 AKSK，调用 TokenHub API 刷新所有模型配置 |
 | `hdspace-envsync` | `agent:tools` (scheduled) | 每 1 分钟从 keyring 读取 HW_ACCESS_KEY/HW_SECRET_KEY/HW_SECURITY_TOKEN 同步到宿主进程环境变量 |
 | `hdspace-ratelimit` | `agent:observers` | 当 TokenHub 返回 429 限流时，将错误消息替换为用户可操作的提示文案（含配置专属模型的站内链接） |
+| `skill-manager` | `cli:http` | 提供技能目录的 HTTP API：列表、详情、安装、卸载（`/skills` 路由） |
 
 ## 构建
 
@@ -151,13 +152,6 @@ make docker
 
 ---
 
-## License
-
-MIT
-
-
----
-
 ## hdspace-ratelimit
 
 `agent:observers` 插件，实现 `on_api_error` 装饰器导出（openagent-go PR #126 引入的扩展点）。当模型 provider 返回 HTTP 429 且 base_url 命中 TokenHub 网关域名时，将错误消息整体替换为用户可操作的提示文案；其余错误保持原样。
@@ -181,3 +175,36 @@ MIT
 - 仅替换用户可见的错误消息；重试语义（`RetryableError`、`Retry-After`）由宿主保留，内核重试循环不受影响
 - 非 TokenHub 的 429、非 429 的 TokenHub 错误均返回空（不替换）
 - 与 `hdspace-models` / `hdspace-renew` 不同，本插件不读 keyring、不调 API、无副作用
+
+---
+
+## skill-manager
+
+`cli:http` 路由插件，管理可安装技能：读取技能目录清单 `~/.agents/INSTALLABLE_SKILLS.json`，对已安装目录 `~/.agents/skills/` 执行安装与卸载。可通过环境变量 `INSTALLABLE_SKILLS_PATH` 覆盖清单路径。
+
+### 路由
+
+| 路由 | 方法 | 说明 |
+|------|------|------|
+| `/skills` | GET | 技能列表（已安装 + 目录），带 `installed` / `upgradeable` 标记 |
+| `/skills/{name}` | GET | 技能详情（frontmatter、安装命令、MD5） |
+| `/skills/{name}/install` | POST | 通过目录条目的 `install_cmd` 安装技能 |
+| `/skills/{name}/remove` | POST | 通过 `remove_cmd` 卸载已安装技能 |
+
+### 实现要点
+
+- `upgradeable` 判定：比较本地技能目录 MD5（`host::directory_md5`）与目录清单的 `skill_folder_md5`，检测技能安装自旧版目录
+- `safe_cmd` / `safe_args`：白名单守卫——仅执行目录条目中 `npx skills add/remove` 形式的命令，拒绝任意命令
+- `valid_name`：路径穿越守卫——拒绝空 / `.` / `..` / 含 `/` 或 `\` 的名称
+- 使用 openagent-pdk host API：`env_get`、`fs_read`、`directory_md5`、`exec_command`
+
+### 部署
+
+`cli:*` 插件需放置在 `~/.hwcloud/plugins/`（CLI 插件系统加载目录），与 `agent:*` 插件的 `~/.hwcloud/profile/plugins/` 不同。
+
+---
+
+## License
+
+MIT
+
