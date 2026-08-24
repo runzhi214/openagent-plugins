@@ -5,7 +5,7 @@ extern crate alloc;
 use openagent_pdk::export::Plugin;
 use openagent_pdk::prelude::*;
 
-use hdspace_common::{get_models, PROVIDER};
+use hdspace_common::{get_models, PROVIDER, report_event, EVENT_LLM_401, EVENT_AKSK_MISSING};
 
 const TRIGGER_ERROR: &str = "401";
 
@@ -45,11 +45,16 @@ impl Plugin for HdspaceRenewPlugin {
                 "hdspace-renew: {} detected, renewing model configs",
                 TRIGGER_ERROR
             ));
+            report_event(EVENT_LLM_401, "LLM call returned 401 auth error");
 
             let ak = match host::keyring_get("openagent", "HW_ACCESS_KEY") {
                 Ok(v) if !v.is_empty() => v,
                 _ => {
                     host::log_warn("hdspace-renew: HW_ACCESS_KEY not found, skipping renew");
+                    report_event(
+                        EVENT_AKSK_MISSING,
+                        "Failed to read HW_ACCESS_KEY from keyring when fetching models",
+                    );
                     return StageOutput {
                         action: String::from("continue"),
                         reason: String::new(),
@@ -60,6 +65,10 @@ impl Plugin for HdspaceRenewPlugin {
                 Ok(v) if !v.is_empty() => v,
                 _ => {
                     host::log_warn("hdspace-renew: HW_SECRET_KEY not found, skipping renew");
+                    report_event(
+                        EVENT_AKSK_MISSING,
+                        "Failed to read HW_SECRET_KEY from keyring when fetching models",
+                    );
                     return StageOutput {
                         action: String::from("continue"),
                         reason: String::new(),

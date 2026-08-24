@@ -9,6 +9,7 @@ use hmac::{Hmac, Mac};
 use sha2::{Digest, Sha256};
 type HmacSha256 = Hmac<Sha256>;
 
+use base64::Engine;
 use openagent_pdk::prelude::serde_json;
 use serde::Deserialize;
 
@@ -230,4 +231,107 @@ fn epoch_days_to_date(days: i32) -> (i32, i32, i32) {
     let m = if mp < 10 { mp + 3 } else { mp - 9 };
     let y = if m <= 2 { y + 1 } else { y };
     (y, m as i32, d as i32)
+}
+
+// ── Event tracking ──
+
+pub const EVENT_POST_URL: &str = "https://developer.martech.saas.huaweicloud.com:8443/track";
+pub const APP_ID: &str = "huaweicloud"; // 对应统一开发者App分类
+pub const EVENT_LLM_401: &str = "HwCloudCli_Auth_Fail"; // 对应认证失败事件
+pub const EVENT_AKSK_MISSING: &str = "HwCloudCli_No_Cred"; // 对应HWCLOUDCLI无凭据事件
+
+pub fn report_event(event: &str, comment: &str) {
+    let identity = get_identity();
+    let time_ms = openagent_pdk::host::utc_now() / 1_000_000;
+
+    let payload = serde_json::json!([{
+        "anonymousId": identity,
+        "distinctId": identity,
+        "event": event,
+        "time": time_ms,
+        "type": "track",
+        "properties": {
+            "source": identity,
+            "comment": comment
+        }
+    }]);
+    let event_json = match serde_json::to_string(&payload) {
+        Ok(s) => s,
+        Err(e) => {
+            openagent_pdk::host::log_warn(&alloc::format!("track: serialize error: {}", e));
+            return;
+        }
+    };
+
+    let b64 = base64::engine::general_purpose::STANDARD.encode(event_json.as_bytes());
+    let form = alloc::format!(
+        "data={}&appid={}&debug=0&gzip=0",
+        form_encode(&b64),
+        APP_ID
+    );
+
+    const HEADERS: &str = r#"{"Content-Type":"application/x-www-form-urlencoded"}"#;
+
+    match openagent_pdk::host::http_request("POST", EVENT_POST_URL, HEADERS, form.as_bytes()) {
+        Ok((status, _)) if status == 200 => {
+            openagent_pdk::host::log_info(&alloc::format!(
+                "track: event '{}' reported successfully",
+                event
+            ));
+        }
+        Ok((status, body)) => {
+            openagent_pdk::host::log_warn(&alloc::format!(
+                "track: unexpected status={}, body={}",
+                status,
+                body
+            ));
+        }
+        Err(e) => {
+            openagent_pdk::host::log_warn(&alloc::format!("track: http error: {}", e));
+        }
+    }
+}
+
+fn get_identity() -> String {
+    match openagent_pdk::host::exec_command("hostname", &[], None, None, false, None) {
+        Ok(r) if r.exit_code == 0 => {
+            let h = r.stdout.trim();
+            if !h.is_empty() {
+                return String::from(h);
+            }
+            gen_uuid()
+        }
+        _ => gen_uuid(),
+    }
+}
+
+fn gen_uuid() -> String {
+    let mut state = openagent_pdk::host::utc_now();
+    let mut out = String::with_capacity(32);
+    for _ in 0..2 {
+        state = state.wrapping_add(0x9E3779B97F4A7C15);
+        let mut z = state;
+        z = (z ^ (z >> 30)).wrapping_mul(0xBF58476D1CE4E5B9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94D049BB133111EB);
+        z = z ^ (z >> 31);
+        let bytes = z.to_be_bytes();
+        for &b in &bytes {
+            out.push(HEX[(b >> 4) as usize] as char);
+            out.push(HEX[(b & 0x0f) as usize] as char);
+        }
+    }
+    out
+}
+
+fn form_encode(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for &b in s.as_bytes() {
+        match b {
+            b'+' => out.push_str("%2B"),
+            b'/' => out.push_str("%2F"),
+            b'=' => out.push_str("%3D"),
+            _ => out.push(b as char),
+        }
+    }
+    out
 }
