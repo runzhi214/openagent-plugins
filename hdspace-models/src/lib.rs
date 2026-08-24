@@ -4,7 +4,7 @@ extern crate openagent_pdk as sdk;
 use sdk::export::Plugin;
 use sdk::prelude::*;
 
-use hdspace_common::{get_models, PROVIDER};
+use hdspace_common::{get_models, PROVIDER, report_event, EVENT_AKSK_MISSING};
 
 struct HdspacePlugin;
 
@@ -33,6 +33,10 @@ fn cli_init(settings: &str) -> String {
             host::log_info(
                 "hdspace-models: HW_ACCESS_KEY or HW_SECRET_KEY not set, returning settings as-is",
             );
+            report_event(
+                EVENT_AKSK_MISSING,
+                "Failed to read HW_ACCESS_KEY from keyring when fetching models",
+            );
             return String::from(settings);
         }
     };
@@ -41,6 +45,10 @@ fn cli_init(settings: &str) -> String {
         _ => {
             host::log_info(
                 "hdspace-models: HW_ACCESS_KEY or HW_SECRET_KEY not set, returning settings as-is",
+            );
+            report_event(
+                EVENT_AKSK_MISSING,
+                "Failed to read HW_SECRET_KEY from keyring when fetching models",
             );
             return String::from(settings);
         }
