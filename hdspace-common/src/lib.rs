@@ -14,10 +14,59 @@ use openagent_pdk::prelude::serde_json;
 use serde::Deserialize;
 
 pub const DEFAULT_DOMAIN: &str = "devstation.myhuaweicloud.com";
-pub const API_PATH: &str = "/open-api-public/v1/tokenhub-configs";
-pub const API_PATH_SIGN: &str = "/open-api-public/v1/tokenhub-configs/";
+pub const API_PATH: &str = "/open-api-public/v2/tokenhub-configs";
+pub const API_PATH_SIGN: &str = "/open-api-public/v2/tokenhub-configs/";
 pub const PROVIDER: &str = "hwdevspace";
 const HEX: &[u8; 16] = b"0123456789abcdef";
+
+// ── AKSK ──
+
+pub struct Aksk {
+    pub ak: String,
+    pub sk: String,
+    pub security_token: Option<String>,
+}
+
+pub fn load_aksk() -> Option<Aksk> {
+    let ak = match openagent_pdk::host::keyring_get("openagent", "HW_ACCESS_KEY") {
+        Ok(v) if !v.is_empty() => v,
+        _ => return None,
+    };
+    let sk = match openagent_pdk::host::keyring_get("openagent", "HW_SECRET_KEY") {
+        Ok(v) if !v.is_empty() => v,
+        _ => return None,
+    };
+    let security_token = openagent_pdk::host::keyring_get("openagent", "HW_SECURITY_TOKEN")
+        .ok()
+        .filter(|v| !v.is_empty());
+    Some(Aksk {
+        ak,
+        sk,
+        security_token,
+    })
+}
+
+// ── JSON escape ──
+
+pub fn escape_json(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 => {
+                out.push_str(&alloc::format!("\\u{:04x}", c as u32));
+            }
+            c => out.push(c),
+        }
+    }
+    out
+}
+
+// ── Model types ──
 
 #[derive(Deserialize)]
 pub struct ModelInfo {
@@ -28,13 +77,30 @@ pub struct ModelInfo {
     pub context_window: u64,
     #[serde(default)]
     pub max_tokens: u64,
+    #[serde(default)]
+    pub sort: u32,
 }
 
 #[derive(Deserialize)]
+struct ModelsByType {
+    #[serde(default)]
+    text: Vec<ModelInfo>,
+    #[serde(default)]
+    embedding: Vec<ModelInfo>,
+}
+
+#[derive(Deserialize)]
+struct AgentConfigRaw {
+    api_key: String,
+    base_url: String,
+    models: ModelsByType,
+}
+
 pub struct AgentConfig {
     pub api_key: String,
     pub base_url: String,
     pub models: Vec<ModelInfo>,
+    pub embedding_models: Vec<ModelInfo>,
 }
 
 #[derive(Deserialize)]
@@ -43,7 +109,7 @@ struct ApiResponse {
     #[allow(dead_code)]
     #[serde(default)]
     pub error_msg: String,
-    pub result: AgentConfig,
+    result: AgentConfigRaw,
 }
 
 pub fn get_models(ak: &str, sk: &str, security_token: Option<&str>) -> Option<AgentConfig> {
@@ -81,12 +147,26 @@ pub fn get_models(ak: &str, sk: &str, security_token: Option<&str>) -> Option<Ag
         openagent_pdk::host::log_warn("tokenhub: API error code not 0000");
         return None;
     }
-    let mut result = resp.result;
-    override_limits(&mut result.models);
-    Some(result)
+
+    let result = resp.result;
+    let mut text_models = result.models.text;
+    let mut embedding_models = result.models.embedding;
+
+    text_models.sort_by_key(|m| m.sort);
+    embedding_models.sort_by_key(|m| m.sort);
+
+    override_text_limits(&mut text_models);
+    override_embedding_limits(&mut embedding_models);
+
+    Some(AgentConfig {
+        api_key: result.api_key,
+        base_url: result.base_url,
+        models: text_models,
+        embedding_models,
+    })
 }
 
-fn override_limits(models: &mut [ModelInfo]) {
+fn override_text_limits(models: &mut [ModelInfo]) {
     for m in models.iter_mut() {
         let (cw, mt) = match m.model_id.as_str() {
             "glm-5.2" => (131072, 131072),
@@ -101,6 +181,13 @@ fn override_limits(models: &mut [ModelInfo]) {
         };
         m.context_window = cw;
         m.max_tokens = mt;
+    }
+}
+
+fn override_embedding_limits(models: &mut [ModelInfo]) {
+    for m in models.iter_mut() {
+        m.context_window = 8192;
+        m.max_tokens = 8192;
     }
 }
 
@@ -236,9 +323,9 @@ fn epoch_days_to_date(days: i32) -> (i32, i32, i32) {
 // ── Event tracking ──
 
 pub const EVENT_POST_URL: &str = "https://developer.martech.saas.huaweicloud.com:8443/track";
-pub const APP_ID: &str = "huaweicloud"; // 对应统一开发者App分类
-pub const EVENT_LLM_401: &str = "HwCloudCli_Auth_Fail"; // 对应认证失败事件
-pub const EVENT_AKSK_MISSING: &str = "HwCloudCli_No_Cred"; // 对应HWCLOUDCLI无凭据事件
+pub const APP_ID: &str = "huaweicloud";
+pub const EVENT_LLM_401: &str = "HwCloudCli_Auth_Fail";
+pub const EVENT_AKSK_MISSING: &str = "HwCloudCli_No_Cred";
 
 pub fn report_event(event: &str, comment: &str) {
     let identity = get_identity();

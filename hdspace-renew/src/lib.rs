@@ -5,7 +5,7 @@ extern crate alloc;
 use openagent_pdk::export::Plugin;
 use openagent_pdk::prelude::*;
 
-use hdspace_common::{get_models, report_event, EVENT_AKSK_MISSING, EVENT_LLM_401, PROVIDER};
+use hdspace_common::{escape_json, get_models, load_aksk, PROVIDER, report_event, EVENT_LLM_401, EVENT_AKSK_MISSING};
 
 const TRIGGER_ERROR: &str = "401";
 
@@ -47,13 +47,13 @@ impl Plugin for HdspaceRenewPlugin {
             ));
             report_event(EVENT_LLM_401, "LLM call returned 401 auth error");
 
-            let ak = match host::keyring_get("hwcloud", "HW_ACCESS_KEY") {
-                Ok(v) if !v.is_empty() => v,
-                _ => {
-                    host::log_warn("hdspace-renew: HW_ACCESS_KEY not found, skipping renew");
+            let aksk = match load_aksk() {
+                Some(a) => a,
+                None => {
+                    host::log_warn("hdspace-renew: AKSK not found, skipping renew");
                     report_event(
                         EVENT_AKSK_MISSING,
-                        "Failed to read HW_ACCESS_KEY from keyring when fetching models",
+                        "Failed to read HW_ACCESS_KEY or HW_SECRET_KEY from keyring when renewing",
                     );
                     return StageOutput {
                         action: String::from("continue"),
@@ -61,39 +61,25 @@ impl Plugin for HdspaceRenewPlugin {
                     };
                 }
             };
-            let sk = match host::keyring_get("hwcloud", "HW_SECRET_KEY") {
-                Ok(v) if !v.is_empty() => v,
-                _ => {
-                    host::log_warn("hdspace-renew: HW_SECRET_KEY not found, skipping renew");
-                    report_event(
-                        EVENT_AKSK_MISSING,
-                        "Failed to read HW_SECRET_KEY from keyring when fetching models",
-                    );
-                    return StageOutput {
-                        action: String::from("continue"),
-                        reason: String::new(),
-                    };
-                }
-            };
-            let security_token = host::keyring_get("hwcloud", "HW_SECURITY_TOKEN")
-                .ok()
-                .filter(|v| !v.is_empty());
 
             host::log_info("hdspace-renew: AKSK found, fetching fresh model config");
 
-            match get_models(&ak, &sk, security_token.as_deref()) {
+            match get_models(&aksk.ak, &aksk.sk, aksk.security_token.as_deref()) {
                 Some(cfg) => {
                     host::log_info(&alloc::format!(
                         "hdspace-renew: got {} models, updating configs",
                         cfg.models.len()
                     ));
+                    let esc_api_key = escape_json(&cfg.api_key);
+                    let esc_base_url = escape_json(&cfg.base_url);
                     for m in &cfg.models {
+                        let esc_model_id = escape_json(&m.model_id);
                         let cfg_json = alloc::format!(
                             r#"{{"provider":"{}","model_id":"{}","api_key":"{}","base_url":"{}","max_input_tokens":{},"max_output_tokens":{}}}"#,
                             PROVIDER,
-                            m.model_id,
-                            cfg.api_key,
-                            cfg.base_url,
+                            esc_model_id,
+                            esc_api_key,
+                            esc_base_url,
                             m.context_window,
                             m.max_tokens
                         );
@@ -110,6 +96,26 @@ impl Plugin for HdspaceRenewPlugin {
                         }
                     }
                     host::log_info("hdspace-renew: model configs renewed");
+
+                    if let Some(em) = cfg.embedding_models.first() {
+                        let emb_json = alloc::format!(
+                            r#"{{"base_url":"{}","api_key":"{}","model":"{}"}}"#,
+                            esc_base_url,
+                            esc_api_key,
+                            escape_json(&em.model_id)
+                        );
+                        match host::runtime_set_embedding_config(&emb_json) {
+                            Ok(()) => host::log_info(&alloc::format!(
+                                "hdspace-renew: updated embedding model {}",
+                                em.model_id
+                            )),
+                            Err(e) => host::log_error(&alloc::format!(
+                                "hdspace-renew: failed to update embedding model {}: {}",
+                                em.model_id,
+                                e
+                            )),
+                        }
+                    }
                 }
                 None => {
                     host::log_warn("hdspace-renew: failed to fetch model config from TokenHub");

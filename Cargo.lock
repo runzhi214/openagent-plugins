@@ -140,7 +140,7 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 [[package]]
 name = "openagent-pdk"
 version = "0.0.1"
-source = "git+https://github.com/yusheng-g/openagent-go#1e63ec7e9fb069a4fdff30fc88265ae10ea76982"
+source = "git+https://github.com/yusheng-g/openagent-go#ef6bbb84e2d201237f69450ef7514d861a6508d9"
 dependencies = [
  "base64",
  "dlmalloc",

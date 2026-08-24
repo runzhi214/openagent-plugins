@@ -4,7 +4,7 @@ extern crate openagent_pdk as sdk;
 use sdk::export::Plugin;
 use sdk::prelude::*;
 
-use hdspace_common::{get_models, report_event, EVENT_AKSK_MISSING, PROVIDER};
+use hdspace_common::{escape_json, get_models, load_aksk, PROVIDER, report_event, EVENT_AKSK_MISSING};
 
 struct HdspacePlugin;
 
@@ -27,45 +27,29 @@ impl Plugin for HdspacePlugin {
 openagent_pdk::export!(HdspacePlugin);
 
 fn cli_init(settings: &str) -> String {
-    let ak = match host::keyring_get("hwcloud", "HW_ACCESS_KEY") {
-        Ok(v) if !v.is_empty() => v,
-        _ => {
+    let aksk = match load_aksk() {
+        Some(a) => a,
+        None => {
             host::log_info(
-                "hdspace-models: HW_ACCESS_KEY or HW_SECRET_KEY not set, returning settings as-is",
+                "hdspace-models: AKSK not set, returning settings as-is",
             );
             report_event(
                 EVENT_AKSK_MISSING,
-                "Failed to read HW_ACCESS_KEY from keyring when fetching models",
+                "Failed to read HW_ACCESS_KEY or HW_SECRET_KEY from keyring when fetching models",
             );
             return String::from(settings);
         }
     };
-    let sk = match host::keyring_get("hwcloud", "HW_SECRET_KEY") {
-        Ok(v) if !v.is_empty() => v,
-        _ => {
-            host::log_info(
-                "hdspace-models: HW_ACCESS_KEY or HW_SECRET_KEY not set, returning settings as-is",
-            );
-            report_event(
-                EVENT_AKSK_MISSING,
-                "Failed to read HW_SECRET_KEY from keyring when fetching models",
-            );
-            return String::from(settings);
-        }
-    };
-    let security_token = host::keyring_get("hwcloud", "HW_SECURITY_TOKEN")
-        .ok()
-        .filter(|v| !v.is_empty());
 
     host::log_info("hdspace-models: AKSK found, fetching model config");
 
-    let config = get_models(&ak, &sk, security_token.as_deref());
+    let config = get_models(&aksk.ak, &aksk.sk, aksk.security_token.as_deref());
     merge_settings(
         settings,
         config.as_ref(),
-        &ak,
-        &sk,
-        security_token.as_deref(),
+        &aksk.ak,
+        &aksk.sk,
+        aksk.security_token.as_deref(),
     )
 }
 
@@ -92,12 +76,15 @@ fn merge_settings(
     }
 
     if let Some(cfg) = config {
+        let esc_api_key = escape_json(&cfg.api_key);
+        let esc_base_url = escape_json(&cfg.base_url);
+
         out.push_str("\"provider\":{\"");
         out.push_str(PROVIDER);
         out.push_str("\":{\"api_key\":\"");
-        out.push_str(&cfg.api_key);
+        out.push_str(&esc_api_key);
         out.push_str("\",\"base_url\":\"");
-        out.push_str(&cfg.base_url);
+        out.push_str(&esc_base_url);
         out.push_str("\",\"models\":[");
 
         let mut first = true;
@@ -108,7 +95,7 @@ fn merge_settings(
                 first = false
             }
             out.push_str("{\"id\":\"");
-            out.push_str(&m.model_id);
+            out.push_str(&escape_json(&m.model_id));
             out.push_str("\",\"max_input_tokens\":");
             out.push_str(&alloc::format!("{}", m.context_window));
             out.push_str(",\"max_output_tokens\":");
@@ -121,24 +108,35 @@ fn merge_settings(
             out.push_str(PROVIDER);
             out.push('/');
             if let Some(first) = cfg.models.first() {
-                out.push_str(&first.model_id);
+                out.push_str(&escape_json(&first.model_id));
             }
             out.push_str("\",");
             host::log_info("hdspace-models: default model injected");
         }
         host::log_info("hdspace-models: provider config injected");
+
+        if !cfg.embedding_models.is_empty() {
+            out.push_str("\"embedding\":{\"provider\":\"openai\",\"base_url\":\"");
+            out.push_str(&esc_base_url);
+            out.push_str("\",\"api_key\":\"");
+            out.push_str(&esc_api_key);
+            out.push_str("\",\"model\":\"");
+            out.push_str(&escape_json(&cfg.embedding_models[0].model_id));
+            out.push_str("\"},");
+            host::log_info("hdspace-models: embedding config injected");
+        }
     }
 
     out.push_str("\"env\":{\"HW_ACCESS_KEY\":\"");
-    out.push_str(ak);
+    out.push_str(&escape_json(ak));
     out.push_str("\",\"HW_SECRET_KEY\":\"");
-    out.push_str(sk);
+    out.push_str(&escape_json(sk));
     out.push('\"');
 
     if let Some(token) = security_token {
         if !token.is_empty() {
             out.push_str(",\"HW_SECURITY_TOKEN\":\"");
-            out.push_str(token);
+            out.push_str(&escape_json(token));
             out.push('\"');
         }
     }
