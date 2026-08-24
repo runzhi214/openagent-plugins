@@ -4,7 +4,7 @@ extern crate openagent_pdk as sdk;
 use sdk::export::Plugin;
 use sdk::prelude::*;
 
-use hdspace_common::{get_models, PROVIDER, report_event, EVENT_AKSK_MISSING};
+use hdspace_common::{get_models, report_event, EVENT_AKSK_MISSING, PROVIDER};
 
 struct HdspacePlugin;
 

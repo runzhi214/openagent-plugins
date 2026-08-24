@@ -264,16 +264,12 @@ pub fn report_event(event: &str, comment: &str) {
     };
 
     let b64 = base64::engine::general_purpose::STANDARD.encode(event_json.as_bytes());
-    let form = alloc::format!(
-        "data={}&appid={}&debug=0&gzip=0",
-        form_encode(&b64),
-        APP_ID
-    );
+    let form = alloc::format!("data={}&appid={}&debug=0&gzip=0", form_encode(&b64), APP_ID);
 
     const HEADERS: &str = r#"{"Content-Type":"application/x-www-form-urlencoded"}"#;
 
     match openagent_pdk::host::http_request("POST", EVENT_POST_URL, HEADERS, form.as_bytes()) {
-        Ok((status, _)) if status == 200 => {
+        Ok((200, _)) => {
             openagent_pdk::host::log_info(&alloc::format!(
                 "track: event '{}' reported successfully",
                 event

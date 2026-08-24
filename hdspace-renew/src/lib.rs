@@ -5,7 +5,7 @@ extern crate alloc;
 use openagent_pdk::export::Plugin;
 use openagent_pdk::prelude::*;
 
-use hdspace_common::{get_models, PROVIDER, report_event, EVENT_LLM_401, EVENT_AKSK_MISSING};
+use hdspace_common::{get_models, report_event, EVENT_AKSK_MISSING, EVENT_LLM_401, PROVIDER};
 
 const TRIGGER_ERROR: &str = "401";
 
