@@ -47,7 +47,7 @@ impl Plugin for HdspaceRenewPlugin {
             ));
             report_event(EVENT_LLM_401, "LLM call returned 401 auth error");
 
-            let ak = match host::keyring_get("openagent", "HW_ACCESS_KEY") {
+            let ak = match host::keyring_get("hwcloud", "HW_ACCESS_KEY") {
                 Ok(v) if !v.is_empty() => v,
                 _ => {
                     host::log_warn("hdspace-renew: HW_ACCESS_KEY not found, skipping renew");
@@ -61,7 +61,7 @@ impl Plugin for HdspaceRenewPlugin {
                     };
                 }
             };
-            let sk = match host::keyring_get("openagent", "HW_SECRET_KEY") {
+            let sk = match host::keyring_get("hwcloud", "HW_SECRET_KEY") {
                 Ok(v) if !v.is_empty() => v,
                 _ => {
                     host::log_warn("hdspace-renew: HW_SECRET_KEY not found, skipping renew");
@@ -75,7 +75,7 @@ impl Plugin for HdspaceRenewPlugin {
                     };
                 }
             };
-            let security_token = host::keyring_get("openagent", "HW_SECURITY_TOKEN")
+            let security_token = host::keyring_get("hwcloud", "HW_SECURITY_TOKEN")
                 .ok()
                 .filter(|v| !v.is_empty());
 

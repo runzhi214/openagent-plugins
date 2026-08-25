@@ -27,7 +27,7 @@ impl Plugin for HdspacePlugin {
 openagent_pdk::export!(HdspacePlugin);
 
 fn cli_init(settings: &str) -> String {
-    let ak = match host::keyring_get("openagent", "HW_ACCESS_KEY") {
+    let ak = match host::keyring_get("hwcloud", "HW_ACCESS_KEY") {
         Ok(v) if !v.is_empty() => v,
         _ => {
             host::log_info(
@@ -40,7 +40,7 @@ fn cli_init(settings: &str) -> String {
             return String::from(settings);
         }
     };
-    let sk = match host::keyring_get("openagent", "HW_SECRET_KEY") {
+    let sk = match host::keyring_get("hwcloud", "HW_SECRET_KEY") {
         Ok(v) if !v.is_empty() => v,
         _ => {
             host::log_info(
@@ -53,7 +53,7 @@ fn cli_init(settings: &str) -> String {
             return String::from(settings);
         }
     };
-    let security_token = host::keyring_get("openagent", "HW_SECURITY_TOKEN")
+    let security_token = host::keyring_get("hwcloud", "HW_SECURITY_TOKEN")
         .ok()
         .filter(|v| !v.is_empty());
 

@@ -32,11 +32,11 @@ impl Plugin for HdspaceEnvSyncPlugin {
     }
 
     fn run_scheduled_job(job: &ScheduledJobInput) -> Result<String, String> {
-        let ak = host::keyring_get("openagent", "HW_ACCESS_KEY")?;
+        let ak = host::keyring_get("hwcloud", "HW_ACCESS_KEY")?;
         if ak.is_empty() {
             return Err("HW_ACCESS_KEY not found in keyring".into());
         }
-        let sk = host::keyring_get("openagent", "HW_SECRET_KEY")?;
+        let sk = host::keyring_get("hwcloud", "HW_SECRET_KEY")?;
         if sk.is_empty() {
             return Err("HW_SECRET_KEY not found in keyring".into());
         }
@@ -44,7 +44,7 @@ impl Plugin for HdspaceEnvSyncPlugin {
         host::env_set("HW_ACCESS_KEY", &ak)?;
         host::env_set("HW_SECRET_KEY", &sk)?;
 
-        match host::keyring_get("openagent", "HW_SECURITY_TOKEN") {
+        match host::keyring_get("hwcloud", "HW_SECURITY_TOKEN") {
             Ok(t) if !t.is_empty() => host::env_set("HW_SECURITY_TOKEN", &t)?,
             _ => host::env_unset("HW_SECURITY_TOKEN")?,
         }
