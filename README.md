@@ -65,7 +65,7 @@ make docker
 
 ### 前置条件
 
-通过 host 的 keyring 预先写入以下凭据（Service 固定为 `openagent`）：
+通过 host 的 keyring 预先写入以下凭据（Service 固定为 `hwcloud`）：
 
 | Key | 必填 | 说明 |
 |-----|------|------|
@@ -119,7 +119,7 @@ make docker
 
 ### Keyring 凭据
 
-与 `hdspace-models` 共用同一组 keyring 凭据（Service 为 `openagent`）：
+与 `hdspace-models` 共用同一组 keyring 凭据（Service 为 `hwcloud`）：
 
 | Key | 必填 | 说明 |
 |-----|------|------|
@@ -136,17 +136,17 @@ make docker
 ### 工作流程
 
 1. 宿主 scheduler 每 1 分钟触发插件的 `run_scheduled` 导出
-2. 从 keyring（service `openagent`）读取 `HW_ACCESS_KEY`、`HW_SECRET_KEY`
+2. 从 keyring（service `hwcloud`）读取 `HW_ACCESS_KEY`、`HW_SECRET_KEY`
 3. 调用 `host::env_set` 写入宿主进程环境变量
 4. `HW_SECURITY_TOKEN` 为可选——存在则设，不存在则 `env_unset` 清除防残留
 
 ### Keyring 凭据
 
-与 `hdspace-models` / `hdspace-renew` 共用同一组 keyring 凭据（Service 为 `openagent`）。
+与 `hdspace-models` / `hdspace-renew` 共用同一组 keyring 凭据（Service 为 `hwcloud`）。
 
 ### 部署
 
-`agent:*` 插件需放置在 `~/.openagent/profile/plugins/`（agent 插件系统加载目录），与 `cli:*` 插件的 `~/.openagent/plugins/` 不同。
+`agent:*` 插件需放置在 `~/.hwcloud/profile/plugins/`（agent 插件系统加载目录），与 `cli:*` 插件的 `~/.hwcloud/plugins/` 不同。
 
 ---
 

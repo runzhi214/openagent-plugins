@@ -1,7 +1,7 @@
 //! hdspace-envsync — scheduled-job plugin.
 //!
 //! Every 1 minutes, reads HW_ACCESS_KEY / HW_SECRET_KEY / HW_SECURITY_TOKEN
-//! from the system keyring (service "openagent") and syncs them into the
+//! from the system keyring (service "hwcloud") and syncs them into the
 //! host process environment so downstream consumers (iac-server, terraform
 //! subprocess, SDK-HMAC-SHA256 signing) see fresh credentials without a
 //! restart.
