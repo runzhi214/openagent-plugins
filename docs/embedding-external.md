@@ -1,8 +1,8 @@
 # 接入外部 Embedding 模型
 
-openagent-cli 的知识库语义召回默认用内置 BGE（bge-small-zh-v1.5，模型 go:embed 进二进制，
-零外部依赖）。若要改用外部托管 embedding 模型（OpenAI 兼容 `/embeddings` 协议），
-只需在 settings.json 里配置 `embedding` 段即可，无需本地模型参数文件。
+openagent-cli 默认纯 Go 构建（CGO_ENABLED=0），无内嵌模型。知识库 CRUD + 关键词召回
+开箱即用；若要启用语义向量召回，需在 settings.json 里配置 `embedding` 段，
+指向一个 OpenAI 兼容 `/embeddings` 端点（外部 provider）。
 
 ## 配置
 
@@ -29,12 +29,12 @@ openagent-cli 的知识库语义召回默认用内置 BGE（bge-small-zh-v1.5，
 ## 生效条件
 
 - `--embedder` 需为 `on`（默认就是 on）；为 off 则整个 embedding 关闭，降级 keyword 召回
-- `provider` 非空 → 使用外部 embedding；`provider` 为空 → 使用内置 BGE
-- 配置后**替代**内置 BGE，向量维度从首次响应自动缓存
+- `provider` 非空 → 启用语义向量召回（外部 embedding）；`provider` 为空 → 降级为关键词 LIKE 匹配（无向量）
+- 向量维度从首次 Embed 响应自动缓存
 
 ## 协议要求
 
-外部端点必须实现 OpenAI `/embeddings` 线格式：
+外部端点必须实现 OpenAI `/embeddings` 协议格式：
 
 - `POST {base_url}/embeddings`
 - 请求体：`{"model": "...", "input": "text"}`

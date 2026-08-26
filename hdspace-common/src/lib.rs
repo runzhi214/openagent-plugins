@@ -28,15 +28,15 @@ pub struct Aksk {
 }
 
 pub fn load_aksk() -> Option<Aksk> {
-    let ak = match openagent_pdk::host::keyring_get("openagent", "HW_ACCESS_KEY") {
+    let ak = match openagent_pdk::host::keyring_get("hwcloud", "HW_ACCESS_KEY") {
         Ok(v) if !v.is_empty() => v,
         _ => return None,
     };
-    let sk = match openagent_pdk::host::keyring_get("openagent", "HW_SECRET_KEY") {
+    let sk = match openagent_pdk::host::keyring_get("hwcloud", "HW_SECRET_KEY") {
         Ok(v) if !v.is_empty() => v,
         _ => return None,
     };
-    let security_token = openagent_pdk::host::keyring_get("openagent", "HW_SECURITY_TOKEN")
+    let security_token = openagent_pdk::host::keyring_get("hwcloud", "HW_SECURITY_TOKEN")
         .ok()
         .filter(|v| !v.is_empty());
     Some(Aksk {
