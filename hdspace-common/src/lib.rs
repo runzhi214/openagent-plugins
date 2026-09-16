@@ -13,9 +13,9 @@ use base64::Engine;
 use openagent_pdk::prelude::serde_json;
 use serde::Deserialize;
 
-pub const DEFAULT_DOMAIN: &str = "devstation.myhuaweicloud.com";
-pub const API_PATH: &str = "/open-api-public/v2/tokenhub-configs";
-pub const API_PATH_SIGN: &str = "/open-api-public/v2/tokenhub-configs/";
+pub const DEFAULT_DOMAIN: &str = "opengw.developer.huaweicloud.com";
+pub const API_PATH: &str = "/open-api-public/v1/opengw-configs";
+pub const API_PATH_SIGN: &str = "/open-api-public/v1/opengw-configs/";
 pub const PROVIDER: &str = "hwdevspace";
 const HEX: &[u8; 16] = b"0123456789abcdef";
 
