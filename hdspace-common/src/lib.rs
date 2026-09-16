@@ -155,40 +155,12 @@ pub fn get_models(ak: &str, sk: &str, security_token: Option<&str>) -> Option<Ag
     text_models.sort_by_key(|m| m.sort);
     embedding_models.sort_by_key(|m| m.sort);
 
-    override_text_limits(&mut text_models);
-    override_embedding_limits(&mut embedding_models);
-
     Some(AgentConfig {
         api_key: result.api_key,
         base_url: result.base_url,
         models: text_models,
         embedding_models,
     })
-}
-
-fn override_text_limits(models: &mut [ModelInfo]) {
-    for m in models.iter_mut() {
-        let (cw, mt) = match m.model_id.as_str() {
-            "glm-5.2" => (131072, 131072),
-            "glm-5.1" => (131072, 131072),
-            "glm-5" => (131072, 65536),
-            "openpangu-2.0-flash" => (512000, 131072),
-            "deepseek-r1-250528" => (98304, 32768),
-            "deepseek-v3.2" => (131072, 32768),
-            "DeepSeek-V3" => (131072, 32768),
-            "deepseek-v3.1-terminus" => (131072, 32768),
-            _ => continue,
-        };
-        m.context_window = cw;
-        m.max_tokens = mt;
-    }
-}
-
-fn override_embedding_limits(models: &mut [ModelInfo]) {
-    for m in models.iter_mut() {
-        m.context_window = 8192;
-        m.max_tokens = 8192;
-    }
 }
 
 fn sign_request(ak: &str, sk: &str, host: &str, path: &str, timestamp: &str) -> String {
