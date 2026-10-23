@@ -1,4 +1,4 @@
-PLUGINS := hdspace-models hdspace-renew hdspace-envsync
+PLUGINS := hdspace-models hdspace-renew hdspace-envsync hdspace-ratelimit
 OUT_DIR := build/plugins
 TARGET  := wasm32-unknown-unknown
 CARGO   := cargo

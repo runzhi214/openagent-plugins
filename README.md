@@ -9,6 +9,7 @@ WASM 插件集合，为 [openagent-cli](https://github.com/runzhi214/openagent-g
 | `hdspace-models` | `cli:settings` | 从 host keyring 读取华为云 AKSK，调用 TokenHub API 获取模型配置，注入 settings  |
 | `hdspace-renew` | `agent:observers` | 当模型返回 HTTP 认证错误时，重新从 keyring 读取 AKSK，调用 TokenHub API 刷新所有模型配置 |
 | `hdspace-envsync` | `agent:tools` (scheduled) | 每 1 分钟从 keyring 读取 HW_ACCESS_KEY/HW_SECRET_KEY/HW_SECURITY_TOKEN 同步到宿主进程环境变量 |
+| `hdspace-ratelimit` | `agent:observers` | 当 TokenHub 返回 429 限流时，将错误消息替换为用户可操作的提示文案（含配置专属模型的站内链接） |
 
 ## 构建
 
@@ -153,3 +154,30 @@ make docker
 ## License
 
 MIT
+
+
+---
+
+## hdspace-ratelimit
+
+`agent:observers` 插件，实现 `on_api_error` 装饰器导出（openagent-go PR #126 引入的扩展点）。当模型 provider 返回 HTTP 429 且 base_url 命中 TokenHub 网关域名时，将错误消息整体替换为用户可操作的提示文案；其余错误保持原样。
+
+### 触发条件
+
+- `status_code == 429`，且 `base_url` 包含以下域名之一（子串匹配，兼容旧网关）：
+  - `tokenhub.developer.huaweicloud.com`
+  - `devstation.myhuaweicloud.com`
+
+### 替换文案
+
+```
+✅ 当前使用人数较多, 请求被临时限流, 通常几分钟内自动恢复, 可稍后重试. 不想等待? 点击 [自定义模型](/settings?q=model), 配置专属模型继续.
+```
+
+文案为 markdown 格式，前端错误气泡渲染后 `[自定义模型](/settings?q=model)` 为站内链接（直达设置页模型配置区）。
+
+### 行为契约
+
+- 仅替换用户可见的错误消息；重试语义（`RetryableError`、`Retry-After`）由宿主保留，内核重试循环不受影响
+- 非 TokenHub 的 429、非 429 的 TokenHub 错误均返回空（不替换）
+- 与 `hdspace-models` / `hdspace-renew` 不同，本插件不读 keyring、不调 API、无副作用

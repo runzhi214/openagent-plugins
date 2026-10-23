@@ -1,0 +1,10 @@
+[package]
+name = "hdspace-ratelimit"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+openagent-pdk = { git = "https://github.com/yusheng-g/openagent-go", subdirectory = "plugin/pdk/rust" }

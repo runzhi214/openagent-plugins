@@ -4,6 +4,7 @@ members = [
     "hdspace-models",
     "hdspace-renew",
     "hdspace-envsync",
+    "hdspace-ratelimit",
 ]
 resolver = "2"
 
