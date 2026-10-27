@@ -59,6 +59,10 @@ make docker
 
 产物直接输出到 `build/plugins/` 目录。
 
+### 发布产物
+
+`dist/` 目录存放各版本发布的 WASM 插件产物，字节取自 [devimage](https://gitcode.com/CloudDeveloperDepartment/devimage) `system/tools/`（与生产部署一致），发布时打 tag 标记版本。
+
 ---
 
 ## hdspace-models
