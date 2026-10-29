@@ -13,7 +13,7 @@ use alloc::string::String;
 use openagent_pdk::export::Plugin;
 use openagent_pdk::prelude::*;
 
-const RATE_LIMIT_MSG: &str = "✅ 当前使用人数较多, 请求被临时限流, 通常几分钟内自动恢复, 可稍后重试. 不想等待? 点击 [自定义模型](/settings?q=model), 配置专属模型继续.";
+const RATE_LIMIT_MSG: &str = "✅ 当前模型接受请求过多触发限流, 您可稍后重试, 或暂时切换使用其他模型, 也可点击 [自定义模型](/settings?q=model) 配置您自己的模型 API-Key 继续使用.";
 
 // TokenHub base_url hosts (settings stores the /v2 root; the SDK appends
 // /chat/completions, so match on the host substring, never the full URL).
