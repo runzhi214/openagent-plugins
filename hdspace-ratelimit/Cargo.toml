@@ -7,4 +7,18 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-openagent-pdk = { git = "https://github.com/yusheng-g/openagent-go", subdirectory = "plugin/pdk/rust" }
+serde_json = { version = "1", default-features = false, features = ["alloc"] }
+
+# The PDK is a no_std crate with a panic_handler lang item: linking it
+# together with std (host-side unit tests) is a duplicate-lang-item error.
+# Gate it behind the default `pdk` feature so `cargo test
+# --no-default-features` builds a std-only crate containing just the
+# pure parsing logic, while the wasm build keeps the plugin code.
+[dependencies.openagent-pdk]
+git = "https://github.com/yusheng-g/openagent-go"
+subdirectory = "plugin/pdk/rust"
+optional = true
+
+[features]
+default = ["pdk"]
+pdk = ["openagent-pdk"]

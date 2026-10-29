@@ -106,6 +106,7 @@ name = "hdspace-ratelimit"
 version = "0.1.0"
 dependencies = [
  "openagent-pdk",
+ "serde_json",
 ]
 
 [[package]]
